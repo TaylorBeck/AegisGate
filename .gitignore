@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.pyright/
+.coverage
+htmlcov/
+.cache/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.pnpm-store/
+.turbo/
+
+# Env & secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Models / ONNX
+*.onnx
+fastembed_cache/
+
+# OS / IDE
+.DS_Store
+.idea/
+.cursor/
+.vscode/
+*.swp
+
+# Logs
+*.log

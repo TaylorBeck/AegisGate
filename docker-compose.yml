@@ -1,0 +1,56 @@
+services:
+  valkey:
+    image: redis/redis-stack-server:7.4.0-v8
+    ports:
+      - "6379:6379"
+    environment:
+      REDIS_ARGS: "--appendonly no --maxmemory-policy allkeys-lru"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: aegis
+      POSTGRES_PASSWORD: aegis
+      POSTGRES_DB: aegis
+    volumes:
+      - ./apps/gateway/migrations:/docker-entrypoint-initdb.d:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aegis -d aegis"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ./apps/gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      REDIS_URL: redis://valkey:6379/0
+      DATABASE_URL: postgresql://aegis:aegis@postgres:5432/aegis
+      FASTEMBED_CACHE_PATH: /opt/fastembed
+      AEGIS_VIRTUAL_KEYS: sandbox:sk-aegis-sandbox
+      AEGIS_CORS_ORIGINS: http://localhost:3000
+    depends_on:
+      valkey:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - fastembed-cache:/opt/fastembed
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  fastembed-cache:

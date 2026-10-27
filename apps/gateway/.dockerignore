@@ -1,0 +1,14 @@
+.venv
+.python-version
+.ruff_cache
+.pytest_cache
+.mypy_cache
+.pyright
+__pycache__
+**/__pycache__
+tests
+*.md
+*.pyc
+.coverage
+htmlcov
+.git

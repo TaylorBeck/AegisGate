@@ -1,0 +1,76 @@
+[project]
+name = "aegis-gateway"
+version = "0.1.0"
+description = "AegisGate semantic LLM gateway data plane"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "orjson>=3.10",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.6",
+    "python-dotenv>=1.0",
+    "httpx[http2]>=0.28",
+    "redis[hiredis]>=5.2",
+    "asyncpg>=0.30",
+    "fastembed>=0.5",
+    "numpy>=2.1",
+    "blake3>=1.0",
+    "simsimd>=6.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9",
+    "pyright>=1.1",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "asgi-lifespan>=2.1",
+    "openai>=1.60",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "S", "TID", "PERF", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"json".msg = "Use orjson; stdlib json is banned on the hot path"
+"requests".msg = "Use httpx; requests is synchronous and banned"
+"time.sleep".msg = "Never block the event loop; use asyncio.sleep"
+"torch".msg = "ONNX Runtime only; PyTorch is banned"
+"transformers".msg = "ONNX Runtime only; transformers is banned"
+"sentence_transformers".msg = "ONNX Runtime only; sentence-transformers is banned"
+
+[tool.pyright]
+typeCheckingMode = "strict"
+reportMissingTypeStubs = false
+pythonVersion = "3.12"
+venvPath = "."
+venv = ".venv"
+include = ["app", "tests"]
+exclude = [".venv"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "integration: requires local Valkey and Postgres",
+    "perf: latency-budget benchmarks; excluded from default runs",
+]
+addopts = ["-m", "not perf"]
