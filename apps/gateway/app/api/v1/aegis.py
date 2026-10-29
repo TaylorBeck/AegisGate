@@ -6,6 +6,7 @@ import asyncio
 from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Request
+from redis.exceptions import RedisError
 from starlette.responses import StreamingResponse
 
 from app.api.deps import openai_error_body
@@ -39,13 +40,17 @@ async def events(request: Request) -> StreamingResponse:
             while True:
                 if await request.is_disconnected():
                     break
-                entries = await xread_block(
-                    state.redis_blocking,
-                    EVENTS_STREAM,
-                    cursor,
-                    block_ms=15_000,
-                    count=100,
-                )
+                try:
+                    entries = await xread_block(
+                        state.redis_blocking,
+                        EVENTS_STREAM,
+                        cursor,
+                        block_ms=15_000,
+                        count=100,
+                    )
+                except (TimeoutError, RedisError):
+                    yield b": ping\n\n"
+                    continue
                 if not entries:
                     yield b": ping\n\n"
                     continue

@@ -16,6 +16,10 @@ async def test_singletons_exist(client: AsyncClient) -> None:
     assert isinstance(core, AppState)
     assert core.redis is not None
     assert core.redis_blocking is not core.redis
+    assert (
+        core.redis_blocking.connection_pool.connection_kwargs.get("socket_timeout")
+        is None
+    )
     assert core.pg is not None
     assert core.http is not None
     assert core.embedder.warm is True

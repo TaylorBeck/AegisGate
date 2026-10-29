@@ -34,6 +34,8 @@ async def create_pools(settings: Settings) -> tuple[Redis, Redis]:
         decode_responses=False,
         protocol=2,
         max_connections=settings.redis_blocking_max_connections,
+        socket_timeout=None,
+        socket_connect_timeout=5.0,
     )
     await ping(hot)
     await ping(blocking)

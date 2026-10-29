@@ -51,6 +51,20 @@ services:
       - fastembed-cache:/opt/fastembed
     restart: unless-stopped
 
+  control-plane:
+    build:
+      context: ./apps/control-plane
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_GATEWAY_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_GATEWAY_URL: http://localhost:8000
+    depends_on:
+      - gateway
+    restart: unless-stopped
+
 volumes:
   pgdata:
   fastembed-cache:

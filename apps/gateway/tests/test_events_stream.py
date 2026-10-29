@@ -27,7 +27,7 @@ async def test_events_replay_from_last_event_id(gateway_state: AppState) -> None
         EVENTS_STREAM,
         "0-0",
         block_ms=1000,
-        count=200,
+        count=2000,
     )
     assert any(run_id.encode() in payload for _entry_id, payload in entries)
 
@@ -40,6 +40,17 @@ async def test_events_replay_from_last_event_id(gateway_state: AppState) -> None
     joined = b"".join(bodies)
     assert needle in joined
     assert b"simulation.started" in joined
+    assert b"text/event-stream" in joined
+
+
+async def test_events_idle_ping(gateway_state: AppState) -> None:
+    bodies = await _read_asgi_sse(
+        "/v1/aegis/events",
+        headers={"accept": "text/event-stream"},
+        stop_when=lambda chunk: b": ping" in chunk,
+    )
+    joined = b"".join(bodies)
+    assert b": ping" in joined
     assert b"text/event-stream" in joined
 
 
