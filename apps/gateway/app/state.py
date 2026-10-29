@@ -15,11 +15,17 @@ from app.engine.cache import SemanticCache
 from app.engine.embedder import LocalVectorEngine
 from app.engine.guardrail import Guardrail
 from app.engine.router import ComplexityRouter
+from app.providers.breaker import BreakerSet
+from app.providers.registry import ProviderRegistry
+from app.sandbox.chaos import ChaosController
+from app.sandbox.runner import SimulationRunner
+from app.telemetry.dispatcher import TelemetryDispatcher
+from app.tenancy import VirtualKeyStore
 
 
 @dataclass(slots=True)
 class AppState:
-    """Lifespan-owned resources. Milestone 3 adds providers, breakers, and telemetry."""
+    """Lifespan-owned resources, including providers and telemetry."""
 
     settings: Settings
     redis: Redis
@@ -31,6 +37,12 @@ class AppState:
     router: ComplexityRouter
     guardrail: Guardrail
     admission: Admission
+    providers: ProviderRegistry
+    breakers: BreakerSet
+    dispatcher: TelemetryDispatcher
+    chaos: ChaosController
+    virtual_keys: VirtualKeyStore
+    simulations: SimulationRunner
 
 
 def get_state(request: Request) -> AppState:

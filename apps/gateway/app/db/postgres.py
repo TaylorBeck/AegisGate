@@ -5,7 +5,7 @@ Unknown-member noise stays in this module so the rest of the gateway can
 stay strict.
 """
 
-# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnknownArgumentType=false
 
 from __future__ import annotations
 
@@ -47,6 +47,60 @@ async def ping(pool: asyncpg.Pool) -> bool:
 async def close_pool(pool: asyncpg.Pool) -> None:
     """Close the pool and wait for connections to be released."""
     await pool.close()
+
+
+LEDGER_COLUMNS: tuple[str, ...] = (
+    "request_id",
+    "ts",
+    "tenant_id",
+    "conversation_id",
+    "cache_status",
+    "similarity",
+    "routed_tier",
+    "routed_model",
+    "provider",
+    "failover_from",
+    "tokens_in",
+    "tokens_out",
+    "cost_actual_usd",
+    "cost_saved_usd",
+    "guardrail_ms",
+    "l1_ms",
+    "embed_ms",
+    "l2_ms",
+    "router_ms",
+    "gateway_overhead_ms",
+    "ttft_ms",
+    "total_ms",
+    "status",
+)
+
+
+async def fetch_ledger_by_request_id(
+    pool: asyncpg.Pool, request_id: str
+) -> dict[str, object] | None:
+    """Return one ledger row as a string-keyed dict, or None."""
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT cache_status, tenant_id, status "
+            "FROM finops_ledger WHERE request_id = $1",
+            request_id,
+        )
+    if row is None:
+        return None
+    return {str(key): row[key] for key in row.keys()}
+
+
+async def copy_ledger_rows(pool: asyncpg.Pool, rows: list[tuple[object, ...]]) -> None:
+    """Batch-insert FinOps ledger rows with COPY."""
+    if not rows:
+        return
+    async with pool.acquire() as conn:
+        await conn.copy_records_to_table(
+            "finops_ledger",
+            records=rows,
+            columns=list(LEDGER_COLUMNS),
+        )
 
 
 async def ensure_partitions(pool: asyncpg.Pool) -> None:

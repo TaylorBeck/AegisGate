@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 from redis.asyncio import Redis
 from redis.exceptions import ResponseError
 
-from app.db.redis import get_bytes, raw_command, write_expiring_pair
+from app.db.redis import get_bytes, raw_command, setex_bytes, write_expiring_pair
 from app.engine.coerce import object_dict, object_list, object_pairs
 from app.schemas.finops import Tier
 
@@ -191,8 +191,9 @@ class SemanticCache:
         sys_hash: str,
         vector: NDArray[np.float32],
         ttl_seconds: int | None = None,
+        write_l2: bool = True,
     ) -> None:
-        """Write the L1 string and the L2 hash with the same TTL in one pipeline."""
+        """Write the L1 string and optionally the L2 hash with the same TTL."""
         require_tenant(tenant_id)
         if sys_hash == "":
             raise ValueError("sys_hash is required")
@@ -200,6 +201,9 @@ class SemanticCache:
         if ttl <= 0:
             raise ValueError("ttl_seconds must be positive")
         payload = encode_completion(completion)
+        if not write_l2:
+            await setex_bytes(self._redis, l1_key, payload, ttl)
+            return
         await write_expiring_pair(
             self._redis,
             string_key=l1_key,

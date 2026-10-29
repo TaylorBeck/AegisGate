@@ -21,6 +21,15 @@ class Settings(BaseSettings):
     anthropic_api_key: SecretStr = SecretStr("")
     aegis_virtual_keys: SecretStr = SecretStr("sandbox:sk-aegis-sandbox")
     aegis_cors_origins: str = "http://localhost:3000"
+    demo_sandbox_mode: bool = True
+    mock_ttft_ms: float = 0.0
+    mock_tokens_per_sec: float = 8000.0
+    anthropic_base_url: str = "https://api.anthropic.com"
+    xai_api_key: SecretStr = SecretStr("")
+    xai_base_url: str = "https://api.x.ai/v1"
+    google_api_key: SecretStr = SecretStr("")
+    google_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
+    otel_exporter_otlp_endpoint: str = ""
     embed_model: str = "BAAI/bge-small-en-v1.5"
     embed_threads: int = 4
     embed_max_chars: int = 1024

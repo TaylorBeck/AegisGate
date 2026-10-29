@@ -89,6 +89,103 @@ async def set_bytes(client: Redis, key: str, value: bytes) -> None:
     await client.set(key, value)
 
 
+async def setex_bytes(client: Redis, key: str, value: bytes, ttl_seconds: int) -> None:
+    """SET a key from raw bytes with a TTL."""
+    await client.set(key, value, ex=ttl_seconds)
+
+
+async def xadd_approx(
+    client: Redis,
+    stream: str,
+    fields: dict[str, str | bytes],
+    *,
+    maxlen: int,
+) -> bytes:
+    """XADD with approximate MAXLEN. Returns the stream entry id."""
+    raw: object = cast(
+        object,
+        await client.xadd(stream, cast(Any, fields), maxlen=maxlen, approximate=True),
+    )
+    if isinstance(raw, bytes):
+        return raw
+    if isinstance(raw, str):
+        return raw.encode()
+    raise TypeError("expected stream id from XADD")
+
+
+async def xread_block(
+    client: Redis,
+    stream: str,
+    last_id: str,
+    *,
+    block_ms: int,
+    count: int,
+) -> list[tuple[bytes, bytes]]:
+    """Blocking XREAD. Returns `(id, payload)` pairs from the `payload` field."""
+    raw: object = cast(
+        object,
+        await client.xread({stream: last_id}, block=block_ms, count=count),
+    )
+    return _parse_xread(raw)
+
+
+def _parse_xread(raw: object) -> list[tuple[bytes, bytes]]:
+    if raw is None:
+        return []
+    streams = raw if isinstance(raw, list) else None
+    if not streams:
+        return []
+    out: list[tuple[bytes, bytes]] = []
+    for stream in streams:
+        if not isinstance(stream, list | tuple) or len(stream) < 2:
+            continue
+        entries = stream[1]
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if not isinstance(entry, list | tuple) or len(entry) < 2:
+                continue
+            entry_id = _as_bytes(entry[0])
+            payload = _payload_field(entry[1])
+            if entry_id is None or payload is None:
+                continue
+            out.append((entry_id, payload))
+    return out
+
+
+def _payload_field(fields: object) -> bytes | None:
+    if isinstance(fields, dict):
+        items = list(cast(dict[object, object], fields).items())
+    elif isinstance(fields, list | tuple):
+        values = list(fields)
+        if len(values) % 2 != 0:
+            return None
+        items = [(values[i], values[i + 1]) for i in range(0, len(values), 2)]
+    else:
+        return None
+    for key, value in items:
+        name = _as_text(key)
+        if name == "payload":
+            return _as_bytes(value)
+    return None
+
+
+def _as_bytes(value: object) -> bytes | None:
+    if isinstance(value, bytes):
+        return value
+    if isinstance(value, str):
+        return value.encode()
+    return None
+
+
+def _as_text(value: object) -> str:
+    if isinstance(value, bytes):
+        return value.decode()
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+
 async def write_expiring_pair(
     client: Redis,
     *,

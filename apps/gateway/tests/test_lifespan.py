@@ -24,6 +24,11 @@ async def test_singletons_exist(client: AsyncClient) -> None:
     assert core.guardrail is not None
     assert core.admission is not None
     assert core.router.anchor_count == 150
+    assert core.providers.get("mock-primary") is not None
+    assert core.breakers.get("mock-primary") is not None
+    assert core.dispatcher is not None
+    assert core.chaos is not None
+    assert core.virtual_keys.lookup("sk-aegis-sandbox") == "sandbox"
 
 
 async def test_embedding_is_384d_float32_unit_norm(client: AsyncClient) -> None:

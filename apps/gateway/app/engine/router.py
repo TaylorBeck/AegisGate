@@ -142,6 +142,10 @@ class ComplexityRouter:
         self._slices: dict[Tier, slice] = {}
 
     @property
+    def catalog(self) -> Catalog:
+        return self._catalog
+
+    @property
     def anchor_count(self) -> int:
         matrix = self._matrix
         if matrix is None:
